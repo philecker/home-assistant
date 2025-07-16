@@ -1,0 +1,52 @@
+blueprint:
+  name: Camera Notification with Snapshot
+  description: Send a notification with snapshot when motion is detected from selected camera.
+  domain: automation
+  input:
+    camera_entity:
+      name: Camera
+      description: Select the camera entity
+      selector:
+        entity:
+          domain: camera
+
+    notify_device:
+      name: Notify Device
+      description: Device to send the notification to
+      selector:
+        device:
+          integration: mobile_app
+
+    message:
+      name: Notification Message
+      description: Message content to send with the camera snapshot
+      default: "Motion detected!"
+      selector:
+        text:
+
+    trigger_entity:
+      name: Trigger Entity
+      description: Entity to trigger this notification (like motion sensor or binary_sensor)
+      selector:
+        entity:
+
+trigger:
+  - platform: state
+    entity_id: !input trigger_entity
+    to: 'on'
+
+action:
+  - service: camera.snapshot
+    data:
+      entity_id: !input camera_entity
+      filename: "/tmp/camera_snapshot.jpg"
+
+  - delay: "00:00:01"  # wait briefly for snapshot to be written
+
+  - service: notify.mobile_app_{{ device_id }}
+    data:
+      message: !input message
+      data:
+        image: "/tmp/camera_snapshot.jpg"
+
+mode: single
