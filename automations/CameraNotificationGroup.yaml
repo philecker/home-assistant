@@ -1,6 +1,7 @@
 blueprint:
-  name: Camera Person Detection with Snapshot Notification
-  description: Triggers a notification with a camera snapshot when a person is detected.
+  name: Custom Person Detection with Conditional Snapshot Notification
+  description: Triggers a notification with a camera snapshot when a person is detected,
+    conditionally based on a toggle, with dynamic snapshot naming.
   domain: automation
   input:
     person_detection_sensor:
@@ -9,7 +10,7 @@ blueprint:
       selector:
         entity:
           domain: binary_sensor
-          device_class: motion # Often motion sensors are used for person detection
+          device_class: motion
           multiple: false
     camera_entity_for_snapshot:
       name: Camera for Snapshot
@@ -17,6 +18,13 @@ blueprint:
       selector:
         entity:
           domain: camera
+          multiple: false
+    notification_toggle:
+      name: Notification Toggle (Input Boolean)
+      description: Select an input_boolean entity to control whether notifications are sent.
+      selector:
+        entity:
+          domain: input_boolean
           multiple: false
     notify_target:
       name: Notification Target
@@ -27,7 +35,7 @@ blueprint:
             domain:
               - mobile_app
               - notify
-    snapshot_base_path: # Renamed input for clarity
+    snapshot_base_path:
       name: Snapshot Base Path
       description: Base directory for snapshots (e.g., /config/www/snapshots/).
         Ensure this path is accessible by Home Assistant.
@@ -43,7 +51,7 @@ blueprint:
     notification_message:
       name: Notification Message
       description: Message content for the notification.
-      default: A person has been detected by the camera.
+      default: Person Detected
       selector:
         text:
 
@@ -73,12 +81,15 @@ action:
       filename: "{{ generated_snapshot_filename }}"
   - delay:
       milliseconds: 500 # Give the snapshot a moment to save
-  - service: notify.notify # Changed service to notify.notify for target selector
-    # When using a 'target' selector, the 'notify.notify' service is generally
-    # the correct one, and the 'target' input directly provides the entity IDs.
-    target: !input notify_target
-    data:
-      title: !input notification_title
-      message: "{{ notification_message }} from {{ states(camera_entity_for_snapshot) }}" # Message includes camera name
-      data:
-        image: "{{ generated_snapshot_filename }}" # Use the dynamically generated filename for the image attachment
+  - if:
+      - condition: state
+        entity_id: !input notification_toggle
+        state: "on"
+    then:
+      - service: notify.notify
+        target: !input notify_target
+        data:
+          title: !input notification_title
+          message: "{{ notification_message }} from {{ states(camera_entity_for_snapshot) }}"
+          data:
+            image: "{{ generated_snapshot_filename }}"
