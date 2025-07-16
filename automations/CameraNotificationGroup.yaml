@@ -27,11 +27,11 @@ blueprint:
             domain:
               - mobile_app
               - notify
-    snapshot_filename:
-      name: Snapshot File Path
-      description: Full path and filename (e.g., /config/www/snapshots/person_detected.jpg).
-        This file needs to be accessible by Home Assistant.
-      default: /config/www/snapshots/person_detected.jpg
+    snapshot_base_path: # Renamed input for clarity
+      name: Snapshot Base Path
+      description: Base directory for snapshots (e.g., /config/www/snapshots/).
+        Ensure this path is accessible by Home Assistant.
+      default: /config/www/snapshots
       selector:
         text:
     notification_title:
@@ -56,24 +56,29 @@ trigger:
     to: 'on'
 
 action:
+  - variables:
+      # Construct the dynamic filename: base_path/YYYY-MM-DD/camera_name_HHMMSS.jpg
+      # Uses the current date for the folder, and the camera's friendly name (slugified)
+      # and current time for the filename.
+      generated_snapshot_filename: >
+        {{ [
+          (snapshot_base_path | default('/config/www/snapshots')),
+          now().strftime('%Y-%m-%d'),
+          (state_attr(camera_entity_for_snapshot, 'friendly_name') | slugify),
+          (now().strftime('%H%M%S') + '.jpg')
+        ] | join('/') }}
   - service: camera.snapshot
     data:
       entity_id: !input camera_entity_for_snapshot
-      filename: !input snapshot_filename
+      filename: "{{ generated_snapshot_filename }}"
   - delay:
       milliseconds: 500 # Give the snapshot a moment to save
-  - service: notify.{{ notify_target.split('.')[1] if '.' in notify_target else 'mobile_app_' + notify_target }}
-    # This dynamic service call attempts to use the correct notify service.
-    # For mobile_app devices, it will be mobile_app_device_name.
-    # For notification groups, it will be notify.group_name.
-    # If the input is a single device (e.g., mobile_app.my_phone), it will try to extract
-    # 'my_phone' and use mobile_app_my_phone.
-    # If it's a notify group (e.g., notify.all_devices), it will use notify.all_devices.
-    # Note: For multiple selected devices, this might need more complex handling
-    # or rely on a Home Assistant notification group.
+  - service: notify.notify # Changed service to notify.notify for target selector
+    # When using a 'target' selector, the 'notify.notify' service is generally
+    # the correct one, and the 'target' input directly provides the entity IDs.
     target: !input notify_target
     data:
       title: !input notification_title
-      message: "{{ notification_message }} from {{ states(camera_entity_for_snapshot) }}" # Updated message to include camera name
+      message: "{{ notification_message }} from {{ states(camera_entity_for_snapshot) }}" # Message includes camera name
       data:
-        image: "{{ snapshot_filename }}" # Use the snapshot as an attachment
+        image: "{{ generated_snapshot_filename }}" # Use the dynamically generated filename for the image attachment
