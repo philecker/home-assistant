@@ -74,6 +74,6 @@ action:
     target: !input notify_target
     data:
       title: !input notification_title
-      message: !input notification_message
+      message: "{{ notification_message }} from {{ states(camera_entity_for_snapshot) }}" # Updated message to include camera name
       data:
         image: "{{ snapshot_filename }}" # Use the snapshot as an attachment
