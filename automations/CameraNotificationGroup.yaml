@@ -1,0 +1,79 @@
+blueprint:
+  name: Camera Person Detection with Snapshot Notification
+  description: Triggers a notification with a camera snapshot when a person is detected.
+  domain: automation
+  input:
+    person_detection_sensor:
+      name: Person Detection Sensor
+      description: Select the binary sensor that turns ON when a person is detected.
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class: motion # Often motion sensors are used for person detection
+          multiple: false
+    camera_entity_for_snapshot:
+      name: Camera for Snapshot
+      description: Select the camera entity to take the snapshot from.
+      selector:
+        entity:
+          domain: camera
+          multiple: false
+    notify_target:
+      name: Notification Target
+      description: Select the device(s) or notification group to send the alert to.
+      selector:
+        target:
+          entity:
+            domain:
+              - mobile_app
+              - notify
+    snapshot_filename:
+      name: Snapshot File Path
+      description: Full path and filename (e.g., /config/www/snapshots/person_detected.jpg).
+        This file needs to be accessible by Home Assistant.
+      default: /config/www/snapshots/person_detected.jpg
+      selector:
+        text:
+    notification_title:
+      name: Notification Title
+      description: Title for the notification.
+      default: Person Detected!
+      selector:
+        text:
+    notification_message:
+      name: Notification Message
+      description: Message content for the notification.
+      default: A person has been detected by the camera.
+      selector:
+        text:
+
+mode: single
+max_exceeded: silent
+
+trigger:
+  - platform: state
+    entity_id: !input person_detection_sensor
+    to: 'on'
+
+action:
+  - service: camera.snapshot
+    data:
+      entity_id: !input camera_entity_for_snapshot
+      filename: !input snapshot_filename
+  - delay:
+      milliseconds: 500 # Give the snapshot a moment to save
+  - service: notify.{{ notify_target.split('.')[1] if '.' in notify_target else 'mobile_app_' + notify_target }}
+    # This dynamic service call attempts to use the correct notify service.
+    # For mobile_app devices, it will be mobile_app_device_name.
+    # For notification groups, it will be notify.group_name.
+    # If the input is a single device (e.g., mobile_app.my_phone), it will try to extract
+    # 'my_phone' and use mobile_app_my_phone.
+    # If it's a notify group (e.g., notify.all_devices), it will use notify.all_devices.
+    # Note: For multiple selected devices, this might need more complex handling
+    # or rely on a Home Assistant notification group.
+    target: !input notify_target
+    data:
+      title: !input notification_title
+      message: !input notification_message
+      data:
+        image: "{{ snapshot_filename }}" # Use the snapshot as an attachment
