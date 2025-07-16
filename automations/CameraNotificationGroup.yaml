@@ -28,7 +28,8 @@ blueprint:
           multiple: false
     notify_target:
       name: Notification Target
-      description: Select the device(s) or notification group to send the alert to.
+      description: Select one or more individual mobile app devices (e.g., mobile_app.my_phone)
+        or notification groups (e.g., notify.all_devices) to send the alert to.
       selector:
         target:
           entity:
