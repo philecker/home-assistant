@@ -1,8 +1,9 @@
 blueprint:
-  name: Camera Notification on Person Detection
+  name: Camera Notification on Person Detection (Dynamic Path)
   description: >
-    Triggers when a selected binary sensor turns on, takes a snapshot from the selected camera,
-    and sends a notification if a toggle (e.g., input_boolean) is enabled.
+    When a binary sensor turns on (e.g., motion or person detected), this takes a snapshot
+    from the selected camera and sends a notification if the notification toggle is enabled.
+    The snapshot filename is dynamically based on the camera entity ID.
   domain: automation
   input:
     motion_sensor:
@@ -15,13 +16,9 @@ blueprint:
       selector:
         entity:
           domain: camera
-    snapshot_filename:
-      name: Snapshot File Path
-      description: Full path where the snapshot should be saved (e.g., /media/snapshot/basement/snapshot.jpg)
-      default: /media/snapshot/basement/snapshot.jpg
     notification_toggle:
       name: Notification Toggle
-      description: Input boolean to enable or disable notifications
+      description: Input boolean to enable/disable camera snapshot notifications.
       selector:
         entity:
           domain: input_boolean
@@ -34,11 +31,16 @@ trigger:
 condition: []
 
 action:
+  - variables:
+      camera_id: !input camera_entity
+      snapshot_path: >
+        {{ "/media/snapshot/" + camera_id.split(".")[1] + "/snapshot_" + camera_id.split(".")[1] + ".jpg" }}
+
   - service: camera.snapshot
     target:
       entity_id: !input camera_entity
     data:
-      filename: !input snapshot_filename
+      filename: "{{ snapshot_path }}"
 
   - if:
       - condition: state
@@ -47,8 +49,8 @@ action:
     then:
       - service: notify.all_devices
         data:
-          message: Person Detected
+          message: Person Detected at {{ camera_id }}
           data:
-            image: !input snapshot_filename
+            image: "{{ snapshot_path }}"
 
 mode: single
