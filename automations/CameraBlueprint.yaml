@@ -1,0 +1,111 @@
+blueprint:
+  name: Camera Snapshot on Detection with Notification
+  description: >-
+    This blueprint automates taking a camera snapshot when a specific sensor (like motion or person detection) is triggered.
+
+    It saves the snapshot into a dedicated folder for that camera inside your `/config/www/snapshots/` directory and can optionally send a notification with the image attached. The notification can be tapped to open the live camera feed.
+
+    **Prerequisites:**
+    1. You must have a `www` folder inside your main `config` folder. If not, create it.
+    2. Inside the `www` folder, create another folder named `snapshots`. The blueprint will create camera-specific subfolders inside this one automatically.
+    
+    The final path structure will look like: `/config/www/snapshots/[camera_name]/snapshot_timestamp.jpg`
+  domain: automation
+  input:
+    motion_entity:
+      name: Motion or Person Sensor
+      description: Select the binary sensor that will trigger this automation (e.g., a motion sensor, person sensor, etc.).
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class:
+            - motion
+            - occupancy
+            - presence
+    camera_entity:
+      name: Camera
+      description: Select the camera you want to take a snapshot from.
+      selector:
+        entity:
+          domain: camera
+    send_notification:
+      name: Send Notification
+      description: If enabled, a notification will be sent when motion is detected.
+      selector:
+        boolean: {}
+      default: true
+    notify_device:
+      name: Notification Device or Group
+      description: The device or service to send the notification to (only used if "Send Notification" is enabled).
+      selector:
+        service:
+          domain: notify
+    notification_title:
+      name: (Optional) Notification Title
+      description: The title for the notification message. (Defaults to blank)
+      default: ""
+    notification_message:
+      name: Notification Message
+      description: The main content of the notification message.
+      default: "Motion detected by {{ state_attr(motion_entity, 'friendly_name') }}."
+
+# Variables to define the snapshot path and URL
+variables:
+  camera_name: "{{ state_attr(camera_entity, 'friendly_name') | slugify }}"
+  snapshot_filename: "snapshot_{{ now().strftime('%Y%m%d_%H%M%S') }}.jpg"
+  snapshot_folder_path: "/config/www/snapshots/{{ camera_name }}"
+  snapshot_full_filepath: "{{ snapshot_folder_path }}/{{ snapshot_filename }}"
+  snapshot_public_url: "/local/snapshots/{{ camera_name }}/{{ snapshot_filename }}"
+  send_notification_bool: !input send_notification
+
+# Trigger the automation when the motion sensor turns on
+trigger:
+  - platform: state
+    entity_id: !input motion_entity
+    from: "off"
+    to: "on"
+
+# Define the sequence of actions
+action:
+  # Create the camera-specific folder if it doesn't exist
+  - service: shell_command.create_directory
+    data:
+      directory: "{{ snapshot_folder_path }}"
+      
+  # Take the snapshot and save it to the file
+  - service: camera.snapshot
+    target:
+      entity_id: !input camera_entity
+    data:
+      filename: "{{ snapshot_full_filepath }}"
+      
+  # A brief delay to ensure the file is written to disk before sending
+  - delay:
+      seconds: 1
+      
+  # Conditionally send the notification if the toggle is on
+  - if:
+      - condition: template
+        value_template: "{{ send_notification_bool }}"
+    then:
+      - service: !input notify_device
+        data:
+          title: !input notification_title
+          message: !input notification_message
+          data:
+            # This makes the notification itself clickable, opening the camera view.
+            clickAction: "/lovelace/default_view?entityId={{ camera_entity }}"
+            
+            # This URL is how Home Assistant accesses the image publicly
+            image: "{{ snapshot_public_url }}"
+            
+            # Specific formatting for better compatibility with mobile apps
+            # For iOS:
+            attachment:
+              url: "{{ snapshot_public_url }}"
+              content-type: jpeg
+            # For Android:
+            uri: "{{ snapshot_public_url }}"
+
+# Run a single instance at a time to avoid conflicts
+mode: single
