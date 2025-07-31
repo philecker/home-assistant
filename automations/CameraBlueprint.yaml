@@ -1,6 +1,4 @@
-blueprint:
-  name: Camera Snapshot on Detection with Notification
-
+name: Camera Snapshot on Detection with Notification
 description: |
 This automation takes a camera snapshot when a specific sensor (like motion or person detection) is triggered.
 The snapshot is saved in a dedicated folder inside the `/config/www/snapshots/` directory and can optionally send a notification with the image attached.
@@ -28,7 +26,6 @@ domain: camera
 
 send_notification:
 name: Send Notification
-description: If enabled, a notification will be sent when motion is detected.
 default: true
 
 notify_device:
@@ -40,12 +37,10 @@ domain: notify
 
 notification_title:
 name: (Optional) Notification Title
-description: The title for the notification message. (Defaults to blank)
 default: ""
 
 notification_message:
 name: Notification Message
-description: The main content of the notification message.
 default: "Motion detected by {{ state_attr(motion_entity, 'friendly_name') }}."
 
 variables:
@@ -53,7 +48,6 @@ camera_name: "{{ state_attr(camera_entity, 'friendly_name') | slugify }}"
 snapshot_filename: "snapshot_{{ now().strftime('%Y%m%d_%H%M%S') }}.jpg"
 snapshot_folder_path: "/config/www/snapshots/{{ camera_name }}"
 snapshot_full_filepath: "{{ snapshot_folder_path }}/{{ snapshot_filename }}"
-snapshot_public_url: "/local/snapshots/{{ camera_name }}/{{ snapshot_filename }}"
 send_notification_bool: !input send_notification
 
 trigger:
