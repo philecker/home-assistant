@@ -1,9 +1,9 @@
 blueprint:
-  name: Person Detected - Snapshot and Notify
+  name: Person Detected - Snapshot and Notify (Fixed Group)
   description: >
     Takes a snapshot from a camera and sends a notification when a person is
     detected by a binary sensor. Notifications can be toggled on/off with an
-    input boolean.
+    input boolean and are always sent to the `notify.all_devices` group.
   domain: automation
   source_url: https://github.com/your-github-profile/your-repo/basement_person_detector.yaml
 
@@ -28,14 +28,6 @@ blueprint:
         entity:
           domain: input_boolean
       default: null
-    notification_service:
-      name: Notification Service (e.g., notify.all_devices)
-      description: >
-        The notification service to use. You can enter a specific device like
-        notify.mobile_app_my_phone or a group you have defined like notify.all_devices.
-      selector:
-        # Changed the selector to a text field for maximum flexibility
-        text:
 
 mode: single
 
@@ -66,7 +58,7 @@ action:
             true
           {% endif %}
     then:
-      - service: !input notification_service
+      - service: notify.all_devices
         data:
           title: "Person Detected"
           message: "A person was detected by {{ states(motion_sensor).name }}."
