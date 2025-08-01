@@ -1,25 +1,26 @@
 blueprint:
   name: Person Detected - Snapshot and Notify
-  description: Takes a snapshot from a camera and sends a notification when a person is detected by a binary sensor. Notifications can be toggled on/off with an input boolean.
+  description: >
+    Takes a snapshot from a camera and sends a notification when a person is
+    detected by a binary sensor. Notifications can be toggled on/off with an
+    input boolean.
   domain: automation
-  source_url: https://github.com/your-github-profile/your-repo/basement_person_detector.yaml # Optional but good practice
+  source_url: https://github.com/your-github-profile/your-repo/basement_person_detector.yaml
 
   input:
     motion_sensor:
       name: Person Detection Sensor
-      description: The binary sensor that reports when a person is detected (e.g., from a camera or dedicated sensor).
+      description: The binary sensor that reports when a person is detected.
       selector:
         entity:
           domain: binary_sensor
-          device_class: motion # Or whatever device class your sensor uses
-
+          device_class: motion
     camera_entity:
       name: Camera Entity
       description: The camera entity to take a snapshot from.
       selector:
         entity:
           domain: camera
-
     notification_toggle:
       name: Notification Toggle Helper
       description: An optional input boolean helper to enable or disable notifications.
@@ -27,15 +28,19 @@ blueprint:
         entity:
           domain: input_boolean
       default: null
-
     notification_service:
       name: Notification Service
-      description: The notification service to use (e.g., notify.mobile_app_your_phone, notify.all_devices).
+      description: The notification service to use.
       selector:
         entity:
           domain: notify
 
 mode: single
+
+variables:
+  # Create a consistent, unique filename once at the beginning of the automation.
+  # This avoids timing issues between the snapshot and notification actions.
+  snapshot_filename: "/config/www/snapshots/snapshot_{{ now().strftime('%Y%m%d_%H%M%S') }}_{{ states(camera_entity).name | lower | replace(' ', '_') }}.jpg"
 
 trigger:
   - platform: state
@@ -48,7 +53,7 @@ condition: []
 action:
   - service: camera.snapshot
     data:
-      filename: "/media/local/snapshot/{{ now().strftime('%Y%m%d_%H%M%S') }}_snapshot_{{ states(camera_entity).name | lower | replace(' ', '_') }}.jpg"
+      filename: "{{ snapshot_filename }}"
     target:
       entity_id: !input camera_entity
 
@@ -64,6 +69,6 @@ action:
       - service: !input notification_service
         data:
           title: "Person Detected"
-          message: "A person was detected in {{ states(motion_sensor).name }}."
+          message: "A person was detected by {{ states(motion_sensor).name }}."
           data:
-            image: "/media/local/snapshot/{{ now().strftime('%Y%m%d_%H%M%S') }}_snapshot_{{ states(camera_entity).name | lower | replace(' ', '_') }}.jpg"
+            image: "{{ snapshot_filename | replace('/config/www', '/local') }}"
