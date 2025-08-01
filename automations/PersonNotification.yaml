@@ -34,7 +34,7 @@ trigger:
 variables:
   camera_entity: !input camera
   label: !input camera_name
-  safe_label: "{{ label | lower | regex_replace('[^a-z0-9]', '_') }}"
+  safe_label: "{{ label | lower | replace(' ', '_') | regex_replace('[^a-z0-9_]', '') }}"
   timestamp: "{{ now().strftime('%Y%m%d_%H%M%S') }}"
   snapshot_filename: "/media/snapshots/{{ safe_label }}/snapshot_{{ safe_label }}_{{ timestamp }}.jpg"
   snapshot_url: "/media/local/snapshots/{{ safe_label }}/snapshot_{{ safe_label }}_{{ timestamp }}.jpg"
