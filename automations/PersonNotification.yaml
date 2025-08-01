@@ -48,7 +48,7 @@ action:
     target:
       entity_id: "{{ camera_entity }}"
 
-  - delay: "00:00:01"  # Ensure the snapshot is saved before sending notification
+  - delay: "00:00:10"  # Give the snapshot time to save fully
 
   - if:
       - condition: state
