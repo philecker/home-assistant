@@ -7,7 +7,7 @@ blueprint:
   domain: automation
   input:
     motion_sensor:
-      name: Motion Sensor (binary_sensor)
+      name: Motion Sensor
       selector:
         entity:
           domain: binary_sensor
