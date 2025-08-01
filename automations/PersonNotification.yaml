@@ -2,7 +2,7 @@ blueprint:
   name: Person Detected - Camera Notification
   description: >
     Sends a snapshot notification to all devices when motion is detected by a sensor.
-    Snapshot is saved dynamically using the camera name and timestamp.
+    Snapshot is saved dynamically using a custom camera name and timestamp.
     Notification includes a "View Live" action to open the live camera feed in the HA app.
   domain: automation
   input:
@@ -18,6 +18,11 @@ blueprint:
       selector:
         entity:
           domain: camera
+    camera_name:
+      name: Camera Name
+      description: Used for folder and filenames where the snapshot will be saved (e.g., "basement", "driveway").
+      selector:
+        text:
 
 trigger:
   - platform: state
@@ -26,10 +31,10 @@ trigger:
 
 variables:
   camera_entity: !input camera
-  camera_name: "{{ camera_entity.split('.')[-1] }}"
+  label: !input camera_name
   timestamp: "{{ now().strftime('%Y%m%d_%H%M%S') }}"
-  snapshot_filename: "/media/snapshots/{{ camera_name }}/snapshot_{{ camera_name }}_{{ timestamp }}.jpg"
-  snapshot_url: "/media/local/snapshots/{{ camera_name }}/snapshot_{{ camera_name }}_{{ timestamp }}.jpg"
+  snapshot_filename: "/media/snapshots/{{ label }}/snapshot_{{ label }}_{{ timestamp }}.jpg"
+  snapshot_url: "/media/local/snapshots/{{ label }}/snapshot_{{ label }}_{{ timestamp }}.jpg"
 
 condition: []
 
@@ -47,7 +52,7 @@ action:
     then:
       - service: notify.all_devices
         data:
-          message: "Person Detected - {{ camera_name | replace('_', ' ') | title }}"
+          message: "Person Detected - {{ label | replace('_', ' ') | title }}"
           data:
             image: "{{ snapshot_url }}"
             clickAction: "app://entity/{{ camera_entity }}"
