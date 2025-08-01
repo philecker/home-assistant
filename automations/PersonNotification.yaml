@@ -60,7 +60,6 @@ action:
           message: "Person Detected - {{ label | title }}"
           data:
             image: "{{ snapshot_url }}"
-            clickAction: "app://entity/{{ camera_entity }}"
             actions:
               - action: "URI"
                 title: "View Live"
