@@ -2,7 +2,8 @@ blueprint:
   name: Person Detected - Camera Notification
   description: >
     Sends a snapshot notification to all devices when motion is detected by a binary sensor.
-    Image is stored and referenced dynamically based on the camera entity selected.
+    Snapshot is saved dynamically using the camera name and timestamp.
+    Notification includes a "View Live" action to open the live camera feed in the HA app.
   domain: automation
   input:
     motion_sensor:
@@ -47,5 +48,10 @@ action:
           message: "Person Detected - {{ camera_name | replace('_', ' ') | title }}"
           data:
             image: "{{ snapshot_url }}"
+            clickAction: "app://entity/{{ camera_entity }}"
+            actions:
+              - action: "URI"
+                title: "View Live"
+                uri: "app://entity/{{ camera_entity }}"
 
 mode: single
