@@ -1,0 +1,69 @@
+blueprint:
+  name: Person Detected - Snapshot and Notify
+  description: Takes a snapshot from a camera and sends a notification when a person is detected by a binary sensor. Notifications can be toggled on/off with an input boolean.
+  domain: automation
+  source_url: https://github.com/your-github-profile/your-repo/basement_person_detector.yaml # Optional but good practice
+
+  input:
+    motion_sensor:
+      name: Person Detection Sensor
+      description: The binary sensor that reports when a person is detected (e.g., from a camera or dedicated sensor).
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class: motion # Or whatever device class your sensor uses
+
+    camera_entity:
+      name: Camera Entity
+      description: The camera entity to take a snapshot from.
+      selector:
+        entity:
+          domain: camera
+
+    notification_toggle:
+      name: Notification Toggle Helper
+      description: An optional input boolean helper to enable or disable notifications.
+      selector:
+        entity:
+          domain: input_boolean
+      default: null
+
+    notification_service:
+      name: Notification Service
+      description: The notification service to use (e.g., notify.mobile_app_your_phone, notify.all_devices).
+      selector:
+        entity:
+          domain: notify
+
+mode: single
+
+trigger:
+  - platform: state
+    entity_id: !input motion_sensor
+    from: "off"
+    to: "on"
+
+condition: []
+
+action:
+  - service: camera.snapshot
+    data:
+      filename: "/media/local/snapshot/{{ now().strftime('%Y%m%d_%H%M%S') }}_snapshot_{{ states(camera_entity).name | lower | replace(' ', '_') }}.jpg"
+    target:
+      entity_id: !input camera_entity
+
+  - if:
+      - condition: template
+        value_template: >
+          {% if notification_toggle is not none %}
+            {{ states(notification_toggle) == 'on' }}
+          {% else %}
+            true
+          {% endif %}
+    then:
+      - service: !input notification_service
+        data:
+          title: "Person Detected"
+          message: "A person was detected in {{ states(motion_sensor).name }}."
+          data:
+            image: "/media/local/snapshot/{{ now().strftime('%Y%m%d_%H%M%S') }}_snapshot_{{ states(camera_entity).name | lower | replace(' ', '_') }}.jpg"
