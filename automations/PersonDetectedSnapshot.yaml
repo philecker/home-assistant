@@ -1,0 +1,51 @@
+blueprint:
+  name: Person Detected - Camera Notification
+  description: >
+    Sends a snapshot notification to all devices when motion is detected by a binary sensor.
+    Image is stored and referenced dynamically based on the camera entity selected.
+  domain: automation
+  input:
+    motion_sensor:
+      name: Motion Sensor (binary_sensor)
+      selector:
+        entity:
+          domain: binary_sensor
+    camera:
+      name: Camera
+      selector:
+        entity:
+          domain: camera
+
+trigger:
+  - platform: state
+    entity_id: !input motion_sensor
+    to: 'on'
+
+variables:
+  camera_entity: !input camera
+  camera_name: "{{ camera_entity.split('.')[-1] }}"
+  timestamp: "{{ now().strftime('%Y%m%d_%H%M%S') }}"
+  snapshot_filename: "/media/snapshots/{{ camera_name }}/snapshot_{{ camera_name }}_{{ timestamp }}.jpg"
+  snapshot_url: "/media/local/snapshots/{{ camera_name }}/snapshot_{{ camera_name }}_{{ timestamp }}.jpg"
+
+condition: []
+
+action:
+  - service: camera.snapshot
+    data:
+      filename: "{{ snapshot_filename }}"
+    target:
+      entity_id: "{{ camera_entity }}"
+
+  - if:
+      - condition: state
+        entity_id: input_boolean.camera_notifications
+        state: "on"
+    then:
+      - service: notify.all_devices
+        data:
+          message: "Person Detected - {{ camera_name | replace('_', ' ') | title }}"
+          data:
+            image: "{{ snapshot_url }}"
+
+mode: single
