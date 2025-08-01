@@ -29,17 +29,17 @@ blueprint:
           domain: input_boolean
       default: null
     notification_service:
-      name: Notification Service
-      description: The notification service to use.
+      name: Notification Service (e.g., notify.all_devices)
+      description: >
+        The notification service to use. You can enter a specific device like
+        notify.mobile_app_my_phone or a group you have defined like notify.all_devices.
       selector:
-        entity:
-          domain: notify
+        # Changed the selector to a text field for maximum flexibility
+        text:
 
 mode: single
 
 variables:
-  # Create a consistent, unique filename once at the beginning of the automation.
-  # This avoids timing issues between the snapshot and notification actions.
   snapshot_filename: "/config/www/snapshots/snapshot_{{ now().strftime('%Y%m%d_%H%M%S') }}_{{ states(camera_entity).name | lower | replace(' ', '_') }}.jpg"
 
 trigger:
