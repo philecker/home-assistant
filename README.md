@@ -1,7 +1,7 @@
 # 🏠 Home Assistant Blueprint(s) by @philecker
 
 Welcome to the **Home Assistant Blueprints Collection** by [@philecker](https://github.com/philecker)!  
-This repository contains reusable **blueprints** to enhance your Home Assistant setup — starting with a powerful person detection alert.
+This repository contains reusable **blueprints** to enhance your Home Assistant setup — starting with a powerful person detection alert with iOS actionable notifications.
 
 ---
 
@@ -17,9 +17,9 @@ They allow users to reuse logic by simply filling out fields in the UI — no co
 
 ## 🧩 Included Blueprint(s)
 
-| Name                            | Description                                        |
-|---------------------------------|----------------------------------------------------|
-| `personDetected-notification.yaml` | Sends a snapshot when a **person** is detected by a camera |
+| Name                                                                                     | Description                                        |
+|------------------------------------------------------------------------------------------|----------------------------------------------------|
+| [`personDetected-notification.yaml`](https://github.com/philecker/home-assistant/blob/main/blueprints/personDetected-notification.yaml) | Sends a snapshot when a **person** is detected by a camera |
 
 Each blueprint includes setup instructions in its YAML comments.
 
@@ -53,4 +53,4 @@ To import this blueprint, use the **raw** URL:
 ## 🤝 Contributing
 
 Suggestions or improvements?  
-Open an issue or PR — contributions are welcome! Please include:
+Open an issue
