@@ -1,0 +1,68 @@
+blueprint:
+  name: Person Detected - Camera Notification
+  description: >
+    Sends a snapshot notification to all devices when motion is detected by a sensor.
+    Snapshot is saved using a custom camera name and timestamp.
+    Notification includes a snapshot image, a "View Live" button, and a tap-to-view live feed.
+  domain: automation
+  input:
+    motion_sensor:
+      name: Motion Sensor
+      description: Select the binary sensor that detects motion or presence.
+      selector:
+        entity:
+          domain: binary_sensor
+
+    camera:
+      name: Camera
+      description: Select the camera entity to take the snapshot and view live.
+      selector:
+        entity:
+          domain: camera
+
+    camera_name:
+      name: Camera Name
+      description: Used for folder and filenames where the snapshot will be saved (e.g., "basement", "driveway").
+      selector:
+        text:
+
+trigger:
+  - platform: state
+    entity_id: !input motion_sensor
+    to: 'on'
+
+variables:
+  camera_entity: !input camera
+  label: !input camera_name
+  safe_label: "{{ label | lower | replace(' ', '_') | regex_replace('[^a-z0-9_]', '') }}"
+  timestamp: "{{ now().strftime('%Y%m%d_%H%M%S') }}"
+  snapshot_filename: "/media/snapshots/{{ safe_label }}/snapshot_{{ safe_label }}_{{ timestamp }}.jpg"
+  snapshot_url: "/media/local/snapshots/{{ safe_label }}/snapshot_{{ safe_label }}_{{ timestamp }}.jpg"
+
+condition: []
+
+action:
+  - service: camera.snapshot
+    data:
+      filename: "{{ snapshot_filename }}"
+    target:
+      entity_id: "{{ camera_entity }}"
+
+  - delay: "00:00:10"  # Give the snapshot time to save fully
+
+  - if:
+      - condition: state
+        entity_id: input_boolean.camera_notifications
+        state: "on"
+    then:
+      - service: notify.all_devices
+        data:
+          message: "Person Detected - {{ label | title }}"
+          data:
+            image: "{{ snapshot_url }}"
+            actions:
+              - action: "URI"
+                title: "View Live"
+                uri: "app://entity/{{ camera_entity }}"
+
+mode: single
