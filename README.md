@@ -19,7 +19,7 @@ They allow users to reuse logic by simply filling out fields in the UI — no co
 
 | Name                                                                                     | Description                                        |
 |------------------------------------------------------------------------------------------|----------------------------------------------------|
-| [`personDetected-notification.yaml`](https://github.com/philecker/home-assistant/blob/main/blueprints/PersonNotification.yaml) | Sends a snapshot when a **person** is detected by a camera |
+| [`PersonNotification.yaml`](https://github.com/philecker/home-assistant/blob/main/blueprints/PersonNotification.yaml) | Sends a snapshot when a **person** is detected by a camera |
 
 Each blueprint includes setup instructions in its YAML comments.
 
