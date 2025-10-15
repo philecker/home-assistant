@@ -49,7 +49,7 @@ action:
       entity_id: "{{ camera_entity }}"
 
   # Wait a few seconds for the snapshot to be saved
-  - delay: "00:00:10"
+  - delay: "00:00:05"
 
   # Only notify if the camera_notifications toggle is on
   - if:
