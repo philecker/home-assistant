@@ -1,2 +1,0 @@
-shell_command:
-  create_snapshot_dir: 'mkdir -p "{{ dir }}"'
