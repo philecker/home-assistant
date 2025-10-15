@@ -48,10 +48,8 @@ action:
     target:
       entity_id: "{{ camera_entity }}"
 
-  # Wait until the file actually exists (instead of a blind delay)
-  - wait_template: "{{ snapshot_filename | file_exists }}"
-    timeout: "00:00:10"
-    continue_on_timeout: true
+  # Wait a few seconds for the snapshot to be saved
+  - delay: "00:00:10"
 
   # Only notify if the camera_notifications toggle is on
   - if:
