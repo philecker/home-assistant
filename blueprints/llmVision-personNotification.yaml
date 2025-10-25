@@ -2,7 +2,8 @@ blueprint:
   name: Person Detected - Camera Notification + LLM Vision Remember
   description: >
     Sends a snapshot notification when motion is detected.
-    Saves the snapshot and remembers it in LLM Vision only if a person is detected.
+    Logs an event in LLM Vision using the camera entity.
+    Only triggers if a person is detected.
   domain: automation
   input:
     motion_sensor:
@@ -47,23 +48,23 @@ action:
     data:
       dir: "/config/www/snapshots/{{ safe_label }}"
 
-  # 2️⃣ Take snapshot
+  # 2️⃣ Take snapshot for notifications
   - service: camera.snapshot
     data:
       filename: "{{ snapshot_filename }}"
     target:
       entity_id: !input camera
 
-  # 3️⃣ Wait briefly for file to save
+  # 3️⃣ Wait briefly to ensure file is saved
   - delay: "00:00:02"
 
-  # 4️⃣ Debug: Notify that snapshot was saved
+  # 4️⃣ Debug: confirm snapshot saved
   - service: persistent_notification.create
     data:
       title: "Debug"
       message: "Snapshot saved at {{ snapshot_filename }}"
 
-  # 5️⃣ Only remember in LLM Vision if person is detected
+  # 5️⃣ Only log event in LLM Vision if person detected
   - if:
       - condition: state
         entity_id: !input person_sensor
@@ -71,23 +72,22 @@ action:
     then:
       - service: llmvision.remember
         data:
-          prompt: "Person detected by the {{ label }} camera."
-          image_file: "{{ snapshot_filename }}"
+          title: "Person detected - {{ label }}"
+          summary: ""
+          image_entity: !input camera
           tags:
             - "{{ label }}"
             - "person"
-            - "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
           metadata:
-            camera: "{{ camera_entity }}"
             snapshot_url: "{{ snapshot_url }}"
             motion_entity: "{{ motion_sensor }}"
             detection_entity: "{{ person_entity }}"
 
-      # Debug: Notify that LLM Vision was triggered
+      # Debug: confirm LLM Vision triggered
       - service: persistent_notification.create
         data:
           title: "Debug"
-          message: "LLM Vision remember triggered for {{ snapshot_filename }}"
+          message: "LLM Vision event logged for {{ camera_entity }}"
 
   # 6️⃣ Send notification if camera notifications toggle is on
   - if:
