@@ -1,0 +1,72 @@
+blueprint:
+  name: LLM Vision – People & Vehicle Timeline (No MQTT)
+  description: >
+    Adds person and vehicle detection events from any camera binary_sensor
+    to an LLM Vision Timeline. Includes snapshot capture and deduplication.
+  domain: automation
+
+  input:
+    detection_sensors:
+      name: Detection Sensors
+      description: Person and vehicle binary_sensors
+      selector:
+        entity:
+          domain: binary_sensor
+          multiple: true
+
+    timeline_name:
+      name: LLM Vision Timeline
+      default: "Detection Timeline"
+
+    cooldown_seconds:
+      name: Deduplication Cooldown (seconds)
+      default: 120
+      selector:
+        number:
+          min: 10
+          max: 600
+          step: 10
+
+mode: single
+
+trigger:
+  - platform: state
+    entity_id: !input detection_sensors
+    to: "on"
+
+variables:
+  cooldown: !input cooldown_seconds
+  camera_entity: >
+    {{ state_attr(trigger.entity_id, 'camera')
+       or state_attr(trigger.entity_id, 'entity_picture') }}
+
+condition:
+  - condition: template
+    value_template: >
+      {{ this.last_triggered is none
+         or (as_timestamp(now()) - as_timestamp(this.last_triggered)) > cooldown }}
+
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ camera_entity is not none }}"
+        sequence:
+          - service: camera.snapshot
+            data:
+              entity_id: "{{ camera_entity }}"
+              filename: >
+                /config/www/llmvision/{{ trigger.entity_id | replace('.', '_') }}.jpg
+
+  - service: llmvision.add_event
+    data:
+      timeline: !input timeline_name
+      title: >
+        {{ 'Person detected' if 'person' in trigger.entity_id
+           else 'Vehicle detected' }}
+      description: >
+        Sensor: {{ trigger.entity_id }}
+        Camera: {{ camera_entity }}
+      image_url: >
+        /local/llmvision/{{ trigger.entity_id | replace('.', '_') }}.jpg
+      timestamp: "{{ now().isoformat() }}"
